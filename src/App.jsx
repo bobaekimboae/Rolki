@@ -149,6 +149,18 @@ export function App() {
     setFiles((current) => [...current, ...safe].slice(0, 40));
   }
 
+  async function loadSamplePhotos() {
+    try {
+      const samples = await Promise.all(["yeti-front.webp", "yeti-rear.webp", "yeti-interior.webp"].map(async (name, index) => {
+        const response = await fetch(`${ASSET}reference/${name}`);
+        if (!response.ok) throw new Error("예시 사진을 불러오지 못했습니다.");
+        return new File([await response.blob()], `예시-차량-${index + 1}.webp`, { type: "image/webp" });
+      }));
+      setFiles((current) => [...current, ...samples].slice(0, 40));
+      setError("");
+    } catch { setError("예시 사진을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."); }
+  }
+
   function toggleFormat(id) {
     setSelectedFormats((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
     setPreviewFormat(id);
@@ -279,7 +291,7 @@ export function App() {
               <div className="upload-zone" id="photos" role="button" tabIndex="0" onClick={() => inputRef.current?.click()} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") inputRef.current?.click(); }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}>
                 <span className="plus-icon">+</span><div><strong>차량 사진 추가</strong><p>JPG, PNG 또는 WebP · 사진 1~40장 · 한 장당 최대 20MB</p></div><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => addFiles(e.target.files)} />
               </div>
-              <div className="photo-meta"><span>{files.length} / 40장</span><span>앞·옆·뒤·실내·계기판 사진이 있으면 좋아요.</span></div>
+              <div className="photo-meta"><span>{files.length} / 40장</span><span>앞·옆·뒤·실내·계기판 사진이 있으면 좋아요.</span><button type="button" className="sample-load" onClick={loadSamplePhotos}>예시 사진 3장 불러오기</button></div>
               {photoUrls.length > 0 && <div className="photo-grid">{photoUrls.map((url, index) => <div className="photo-thumb" key={`${files[index]?.name}-${index}`} draggable onDragStart={() => setDragIndex(index)} onDragOver={(e) => e.preventDefault()} onDrop={() => { reorderPhotos(dragIndex, index); setDragIndex(-1); }}><img src={url} alt={`차량 사진 ${index + 1}`} /><span className="photo-index">{index + 1}</span><button type="button" aria-label={`${files[index].name} 삭제`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}>×</button></div>)}</div>}
               <div className="field-grid three">
                 <label>제조사<input value={data.make} onChange={(e) => setField("make", e.target.value)} placeholder="예: BMW" /></label>
@@ -331,3 +343,4 @@ export function App() {
     </div>
   );
 }
+
