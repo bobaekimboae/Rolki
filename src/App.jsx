@@ -135,6 +135,8 @@ export function App() {
   const storyFormat = stories ? { ...(chosenFormats.find((item) => item.ratio === "9:16") || formats[0]), id: "story", name: "스토리", ratio: "9:16" } : null;
   const outputFormats = storyFormat ? [...chosenFormats, storyFormat] : chosenFormats;
   const totalDeliverables = outputFormats.length;
+  const estimatedSeconds = Math.max(5, Math.ceil(totalDeliverables * Math.max(1, files.length) * 2.4));
+  const estimatedTime = estimatedSeconds >= 60 ? `약 ${Math.ceil(estimatedSeconds / 60)}분` : `약 ${estimatedSeconds}초`;
   const title = [data.make, data.model].filter(Boolean).join(" ") || "나의 새 차량";
 
   useEffect(() => () => videoResults.forEach((result) => URL.revokeObjectURL(result.url)), [videoResults]);
@@ -215,7 +217,7 @@ export function App() {
     const canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1920;
     const ctx = canvas.getContext("2d");
     if (!ctx || !canvas.captureStream || !window.MediaRecorder) { setError("이 브라우저에서는 영상 제작을 지원하지 않습니다. 최신 Chrome 또는 Edge를 이용해 주세요."); return; }
-    setRendering(true); setProgress(0); setVideoResults([]);
+    setRendering(true); setProgress(0); setVideoResults([]); setSummaryOpen(true);
     const loaded = await Promise.all(files.map((file) => createImageBitmap(file).catch(() => null)));
     const images = loaded.filter(Boolean);
     if (!images.length) { setRendering(false); setError("선택한 사진을 읽을 수 없습니다. JPG, PNG 또는 WebP 파일을 사용해 주세요."); return; }
@@ -223,7 +225,7 @@ export function App() {
     const secondsPerImage = 2.4;
     const completedResults = [];
     try {
-      for (let formatIndex = 0; formatIndex < chosenFormats.length; formatIndex += 1) {
+      for (let formatIndex = 0; formatIndex < outputFormats.length; formatIndex += 1) {
         const format = outputFormats[formatIndex];
         const [width, height] = format.ratio === "16:9" ? [1920, 1080] : format.ratio === "1:1" ? [1080, 1080] : format.ratio === "3:4" ? [1080, 1440] : [1080, 1920];
         canvas.width = width; canvas.height = height;
@@ -327,7 +329,7 @@ export function App() {
               <p className="privacy-note">사진은 이 기기에서 영상 제작에 사용됩니다. 선택한 자료를 서버에 업로드하지 않습니다.</p>
             </section>
 
-            <div className="desktop-summary"><div><strong>{totalDeliverables}개 결과물 · 약 {Math.max(2, files.length * 3)}분</strong><p>영상은 브라우저에서 제작되며, 완성 후 바로 내려받을 수 있습니다.</p></div><button type="button" className="primary-button" onClick={() => setSummaryOpen(true)}>주문 내용 확인</button></div>
+            <div className="desktop-summary"><div><strong>{totalDeliverables}개 결과물 · {estimatedTime}</strong><p>영상은 브라우저에서 제작되며, 완성 후 바로 내려받을 수 있습니다.</p></div><button type="button" className="primary-button" onClick={() => setSummaryOpen(true)}>주문 내용 확인</button></div>
           </div>
           <ReelPreview data={data} photoUrls={photoUrls} activeFormat={previewFormat} accent={accent} font={font} onSelectFormat={setPreviewFormat} />
         </div>
